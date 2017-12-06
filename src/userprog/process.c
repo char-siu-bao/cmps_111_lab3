@@ -73,34 +73,17 @@ static bool load(const char *cmdline, void (**eip) (void), void **esp);
  * aligned with the stack pointer ESP. Should only be called after the ELF 
  * format binary has been loaded into the heap by load();
  */
+
+//put to code.c
 static void
-push_command(const char *cmdline UNUSED, void **esp)
-{
-//    printf("Base Address: 0x%08x\n", *esp);
-//    char *token;
-//    char *rest = cmdline;
-////    printf(cmdline);
-//    while((token = strtok_r(rest, " ", &rest)))
-//    {
-//        printf("token:%s\n", token);
-//    }
-//    printf("rest:%s\n", rest);
-//    char str[] = "Geeks for Geeks";
-
-    // Word align with the stack pointer. DO NOT REMOVE THIS LINE.
-    *esp = (void*) ((unsigned int) (*esp) & 0xfffffffc);
-    
-    
-//    my code
+push_command_helper(const char *cmdline UNUSED, void **esp){
     char *cmdline_copy = NULL;
-    tid_t tid = TID_ERROR;
-
-    // Make a copy of CMDLINE to avoid a race condition between the caller and load() 
-    cmdline_copy = palloc_get_page(0);
-    if (cmdline_copy == NULL) 
-        return TID_ERROR;
-    
+    cmdline_copy = palloc_get_page(0);    
     strlcpy(cmdline_copy, cmdline, PGSIZE);
+    
+    char *cmdline_copy2 = NULL;
+    cmdline_copy2 = palloc_get_page(0);    
+    strlcpy(cmdline_copy2, cmdline, PGSIZE);
     
 //    find argc 
     char *token;
@@ -112,9 +95,10 @@ push_command(const char *cmdline UNUSED, void **esp)
         argc++;
     }
 //    end of find argc
+    
 //    store cmdline to argv[]
     char *token1;
-    char *rest1 = cmdline;
+    char *rest1 = cmdline_copy2;
     char * argv[argc];
     int argvInd = 0;
     token1 = strtok_r(rest1, " ", &rest1);
@@ -129,7 +113,7 @@ push_command(const char *cmdline UNUSED, void **esp)
     for (int i = argc -1; i >= 0; i--){
         int len = strlen(argv[i]) + 1;
         *esp -= len;
-        argvAddress[i] = memcpy(*esp, argv[i], len);
+        argvAddress[i] = (int)memcpy(*esp, argv[i], len);
     }
 //    end of push argv[] to esp and store address to argvAddress[]
     
@@ -146,7 +130,7 @@ push_command(const char *cmdline UNUSED, void **esp)
         *((int*) *esp) = argvAddress[i];
     }
 //    end of pushing argv address to stack
-    int argvBase = *esp;
+    int argvBase = (int)*esp;
     *esp -= 4;
     *((int*) *esp) = argvBase;
     *esp -= 4;
@@ -154,7 +138,17 @@ push_command(const char *cmdline UNUSED, void **esp)
 //    return fake return address
     *esp -= 4;
     *((int*) *esp) = 0;
-  
+    
+}
+static void
+push_command(const char *cmdline UNUSED, void **esp)
+{
+
+    // Word align with the stack pointer. DO NOT REMOVE THIS LINE.
+    *esp = (void*) ((unsigned int) (*esp) & 0xfffffffc);
+    
+    push_command_helper(cmdline, esp);
+    
     // Some of you CMPS111 Lab 3 code will go here.
     //
     // One approach is to immediately call a function you've created in a
@@ -193,6 +187,7 @@ process_execute(const char *cmdline)
 #endif
 
     char *cmdline_copy = NULL;
+    char *cmdline_copy2 = NULL;
     tid_t tid = TID_ERROR;
 
     // Make a copy of CMDLINE to avoid a race condition between the caller and load() 
@@ -202,9 +197,15 @@ process_execute(const char *cmdline)
     
     strlcpy(cmdline_copy, cmdline, PGSIZE);
     
+    cmdline_copy2 = palloc_get_page(0);
+    if (cmdline_copy2 == NULL) 
+        return TID_ERROR;
+    
+    strlcpy(cmdline_copy2, cmdline, PGSIZE);
+    
     char *token;
     char *rest;
-    token = strtok_r(cmdline, " ", &rest);
+    token = strtok_r(cmdline_copy2, " ", &rest);
 
     // Create a Kernel Thread for the new process
     tid = thread_create(token, PRI_DEFAULT, start_process, cmdline_copy);
@@ -232,17 +233,9 @@ start_process(void *cmdline)
     pif.eflags = FLAG_IF | FLAG_MBS;
     
     char *cmdline_copy = NULL;
-    tid_t tid = TID_ERROR;
-
-    // Make a copy of CMDLINE to avoid a race condition between the caller and load() 
-    cmdline_copy = palloc_get_page(0);
-    if (cmdline_copy == NULL) 
-        return TID_ERROR;
-    
+    cmdline_copy = palloc_get_page(0);    
     strlcpy(cmdline_copy, cmdline, PGSIZE);
 
-    
-    
     char *token;
     char *rest;
     token = strtok_r(cmdline_copy, " ", &rest);
