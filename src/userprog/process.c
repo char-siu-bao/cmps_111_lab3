@@ -75,6 +75,13 @@ static bool load(const char *cmdline, void (**eip) (void), void **esp);
  */
 
 //put to code.c
+
+#define CHILDLOCK_VAL 0
+void 
+childLock_init(struct childLock *lock, char* cmdline){
+    lock->cmdline = cmdline;
+    semaphore_init(&lock->sema, CHILDLOCK_VAL);
+}
 static void
 push_command_helper(const char *cmdline UNUSED, void **esp){
     char *cmdline_copy = NULL;
@@ -206,11 +213,15 @@ process_execute(const char *cmdline)
     char *token;
     char *rest;
     token = strtok_r(cmdline_copy2, " ", &rest);
-
+    
+    struct childLock newChildLock;
+    childLock_init(&newChildLock, cmdline_copy);
+//    printf("childlock: %s", newChildLock.cmdline);
     // Create a Kernel Thread for the new process
-    tid = thread_create(token, PRI_DEFAULT, start_process, cmdline_copy);
+    tid = thread_create(token, PRI_DEFAULT, start_process, &newChildLock);
+    semaphore_down(&newChildLock.sema);
 
-    timer_msleep(10);
+//    timer_msleep(10);
 
     return tid;
 }
@@ -221,9 +232,21 @@ process_execute(const char *cmdline)
  * If arguments are passed in CMDLINE, the thread will exit imediately.
  */
 static void
-start_process(void *cmdline)
+start_process(void *childLock_v)
 {
+    struct childLock *childLock_r = (struct childLock*) childLock_v;
+    char *cmdline = childLock_r->cmdline;
     bool success = false;
+    
+//    char* cmdline;
+//    if(strcmp(thread_name(), "main") == 0){
+//        printf(" *************************************************main: %s\n", thread_name());
+//        cmdline = cmdlineMod; 
+//    }
+//    else{
+//        printf("this should be not main: %s\n", thread_name());
+//        cmdline = cmdlineMod;
+//    }
 
     // Initialize interrupt frame and load executable. 
     struct intr_frame pif;
@@ -248,6 +271,8 @@ start_process(void *cmdline)
     if (!success) {
         thread_exit();
     }
+    
+    semaphore_up(&childLock_r->sema);
 
     // Start the user process by simulating a return from an
     // interrupt, implemented by intr_exit (in threads/intr-stubs.S).  

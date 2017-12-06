@@ -34,6 +34,13 @@
 #define USERPROG_PROCESS_H
 
 #include "threads/thread.h"
+#include "threads/semaphore.h"
+
+struct childLock{
+    struct semaphore sema;
+    char* cmdline;
+    
+};
 
 tid_t process_execute(const char *);
 int process_wait(tid_t);
