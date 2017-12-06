@@ -49,6 +49,18 @@
 #include "userprog/process.h"
 #include "userprog/umem.h"
 
+//put into code.c
+static void create_handler( struct intr_frame *f){
+    char *file;
+    unsigned initial_size;
+    
+    umem_read(f->esp + 4, &file, sizeof(file));
+    umem_read(f->esp + 8, &initial_size, sizeof(initial_size));
+    
+    f->eax = filesys_create(file, initial_size, false);
+    
+}
+
 static void syscall_handler(struct intr_frame *);
 
 static void write_handler(struct intr_frame *);
@@ -85,6 +97,11 @@ syscall_handler(struct intr_frame *f)
   case SYS_WRITE: 
     write_handler(f);
     break;
+    
+  case SYS_CREATE:
+    create_handler(f);
+    break;
+            
 
   default:
     printf("[ERROR] system call %d is unimplemented!\n", syscall);
@@ -145,4 +162,5 @@ static void write_handler(struct intr_frame *f)
 
     f->eax = sys_write(fd, buffer, size);
 }
+
 
