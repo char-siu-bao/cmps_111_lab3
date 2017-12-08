@@ -28,6 +28,11 @@
  * MODIFICATIONS.
  *
  * Modifications Copyright (C) 2017 David C. Harrison. All rights reserved.
+ * 
+ * pintos -v -k -T 60 --qemu --filesys-size=2 -p build/tests/userprog/read-normal -a read-normal -p ../tests/userprog/sample.txt -a sample.txt -- -q -f run read-normal
+ * 
+ * pintos -v -k -T 60 --qemu --filesys-size=2 -p build/tests/userprog/open-normal -a open-normal -p ../tests/userprog/sample.txt -a sample.txt -- -q -f run open-normal
+
  */
 
 #include <stdio.h>
@@ -68,16 +73,80 @@ static int open_handler( struct intr_frame *f){
         f->eax = -1;
     }
     else{
-        list_push_front(&thread_current()->fd, &file_ret->elem);
-        f->eax = list_size(&thread_current()->fd) + 2;
+        list_push_back(&thread_current()->fds, &file_ret->elem);
+        f->eax = list_size(&thread_current()->fds) + 2;
     }
-//    return 3;
-//    f->eax = filesys_open(file);
+
 }
+
+
+
+struct file * 
+fd_to_file(int fd){
+    int fd_check = 2;
+    struct file *filefd;
+    struct list_elem *e;
+
+    for (e = list_begin (&thread_current()->fds); 
+        e != list_end (&thread_current()-> fds);
+        e = list_next (e))
+        {
+          fd_check ++;
+          if(fd_check == fd){
+              filefd = list_entry(e, struct file, elem);
+          }
+        }
+        
+    return filefd;
+    
+}
+static void close_handler( struct intr_frame *f){
+    int fd;
+    umem_read(f->esp +4, &fd, sizeof(fd));
+//    fd = thread_current()->read_fd;
+    struct file *filefd = fd_to_file(fd);
+    
+    file_close(filefd);
+    f->eax = 0;
+       
+}
+
+static void filesize_handler( struct intr_frame *f){
+    int fd;
+    umem_read(f->esp +4, &fd, sizeof(fd));
+    struct file *filefd = fd_to_file(fd);
+    
+    f->eax = file_length(filefd);
+       
+}
+
+static void exec_handler( struct intr_frame *f){
+    char * cmdline;
+    umem_read(f->esp +4, &cmdline, sizeof(cmdline));
+    
+    f->eax =  process_execute(cmdline); 
+}
+
 
 static void read_handler( struct intr_frame *f){
-
+    int fd;
+    void *buffer;
+    unsigned size;
+    
+    umem_read(f->esp + 4, &fd, sizeof(fd));
+    umem_read(f->esp + 8, &buffer, sizeof(buffer));
+    umem_read(f->esp + 12, &size, sizeof(size));
+    
+    if (list_size(&thread_current()->fds) < fd - 2){
+        f->eax = 0;
+    }
+    else{
+        struct file *filefd = fd_to_file(fd);
+        f->eax = file_read(filefd, buffer, size);
+    }
+   
 }
+
 static void syscall_handler(struct intr_frame *);
 
 static void write_handler(struct intr_frame *);
@@ -126,7 +195,22 @@ syscall_handler(struct intr_frame *f)
   case SYS_READ:
     read_handler(f);
     break;
-
+    
+  case SYS_FILESIZE:
+    filesize_handler(f);
+    break;
+    
+  case SYS_CLOSE:
+    close_handler(f);
+    break;
+   
+  case SYS_EXEC:
+    exec_handler(f);
+    break;
+    
+  case SYS_WAIT:
+    break;
+    
   default:
     printf("[ERROR] system call %d is unimplemented!\n", syscall);
     thread_exit();
@@ -170,7 +254,11 @@ static uint32_t sys_write(int fd, const void *buffer, unsigned size)
     putbuf(buffer, size);
     ret = size;
   }
-
+  
+  else if (fd > 2){
+      struct file *filefd = fd_to_file(fd);
+      ret = file_write(filefd, buffer, size);
+  }
   return (uint32_t) ret;
 }
 

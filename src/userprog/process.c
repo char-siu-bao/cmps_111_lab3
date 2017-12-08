@@ -237,16 +237,7 @@ start_process(void *childLock_v)
     struct childLock *childLock_r = (struct childLock*) childLock_v;
     char *cmdline = childLock_r->cmdline;
     bool success = false;
-    
-//    char* cmdline;
-//    if(strcmp(thread_name(), "main") == 0){
-//        printf(" *************************************************main: %s\n", thread_name());
-//        cmdline = cmdlineMod; 
-//    }
-//    else{
-//        printf("this should be not main: %s\n", thread_name());
-//        cmdline = cmdlineMod;
-//    }
+
 
     // Initialize interrupt frame and load executable. 
     struct intr_frame pif;
@@ -271,9 +262,8 @@ start_process(void *childLock_v)
     if (!success) {
         thread_exit();
     }
-    
-    semaphore_up(&childLock_r->sema);
 
+    semaphore_up(&childLock_r->sema);
     // Start the user process by simulating a return from an
     // interrupt, implemented by intr_exit (in threads/intr-stubs.S).  
     // Because intr_exit takes all of its arguments on the stack in 
@@ -281,6 +271,7 @@ start_process(void *childLock_v)
     // pointer (%esp) to our stack frame and jump to it.
     asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&pif) : "memory");
     NOT_REACHED();
+
 }
 
 /* Waits for thread TID to die and returns its exit status.  If
