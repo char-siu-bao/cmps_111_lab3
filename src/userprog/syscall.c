@@ -55,36 +55,39 @@
 #include "userprog/umem.h"
 
 //put into code.c
-static void create_handler( struct intr_frame *f){
+static bool 
+create_handler( struct intr_frame *f){
     char *file;
     unsigned initial_size;
     
     umem_read(f->esp + 4, &file, sizeof(file));
     umem_read(f->esp + 8, &initial_size, sizeof(initial_size));
     
-    f->eax = filesys_create(file, initial_size, false);
-    
+    bool create_bool = filesys_create(file, initial_size, false);
+    f->eax = create_bool;
+    return create_bool;
 }
-static int open_handler( struct intr_frame *f){
+static int 
+open_handler( struct intr_frame *f){
     char *file;
+    int open_val = -1;
     umem_read(f->esp + 4, &file, sizeof(file));
     struct file *file_ret = filesys_open(file);
-    if (file_ret == NULL){
-        f->eax = -1;
-    }
-    else{
+    
+    if (file_ret != NULL){
         list_push_back(&thread_current()->fds, &file_ret->elem);
-        f->eax = list_size(&thread_current()->fds) + 2;
+        open_val = list_size(&thread_current()->fds) + FD_STDOUT;
     }
-
+    f->eax = open_val;
+    return open_val;
 }
 
 
 
 struct file * 
 fd_to_file(int fd){
-    int fd_check = 2;
-    struct file *filefd;
+    int fd_check = FD_STDOUT;
+    struct file *filefd = NULL;
     struct list_elem *e;
 
     for (e = list_begin (&thread_current()->fds); 
@@ -97,13 +100,13 @@ fd_to_file(int fd){
           }
         }
         
-    return filefd;
-    
+    return filefd; 
 }
-static void close_handler( struct intr_frame *f){
+
+static void 
+close_handler( struct intr_frame *f){
     int fd;
     umem_read(f->esp +4, &fd, sizeof(fd));
-//    fd = thread_current()->read_fd;
     struct file *filefd = fd_to_file(fd);
     
     file_close(filefd);
@@ -111,46 +114,54 @@ static void close_handler( struct intr_frame *f){
        
 }
 
-static void filesize_handler( struct intr_frame *f){
+static int
+filesize_handler( struct intr_frame *f){
     int fd;
     umem_read(f->esp +4, &fd, sizeof(fd));
     struct file *filefd = fd_to_file(fd);
     
-    f->eax = file_length(filefd);
+    int filesize = file_length(filefd);
+    f->eax = filesize;
+    return filesize;
        
 }
 
-static void exec_handler( struct intr_frame *f){
+static void 
+exec_handler( struct intr_frame *f){
     char * cmdline;
     umem_read(f->esp +4, &cmdline, sizeof(cmdline));
     
     f->eax =  process_execute(cmdline); 
 }
 
-static void wait_handler( struct intr_frame *f){
+static int
+wait_handler( struct intr_frame *f){
     int child_pid;
     umem_read(f->esp +4, &child_pid, sizeof(child_pid));
-//    printf("waiting: %d\n", child_pid);
-    f->eax = process_wait(child_pid);
+    int wait_val = process_wait(child_pid);
+    f->eax = wait_val;
+    return wait_val;
 }
 
 
-static void read_handler( struct intr_frame *f){
+static int
+read_handler( struct intr_frame *f){
     int fd;
     void *buffer;
+    int read_val = 0;
     unsigned size;
     
     umem_read(f->esp + 4, &fd, sizeof(fd));
     umem_read(f->esp + 8, &buffer, sizeof(buffer));
     umem_read(f->esp + 12, &size, sizeof(size));
     
-    if (list_size(&thread_current()->fds) < fd - 2){
-        f->eax = 0;
-    }
-    else{
+    if (((unsigned)list_size(&thread_current()->fds))>= (fd - FD_STDOUT)){
         struct file *filefd = fd_to_file(fd);
-        f->eax = file_read(filefd, buffer, size);
+        read_val = file_read(filefd, buffer, size);
     }
+    
+    f->eax = read_val;
+    return read_val;
    
 }
 
@@ -263,9 +274,9 @@ static uint32_t sys_write(int fd, const void *buffer, unsigned size)
     ret = size;
   }
   
-  else if (fd > 2){
-      struct file *filefd = fd_to_file(fd);
-      ret = file_write(filefd, buffer, size);
+  else if (fd > FD_STDOUT){
+    struct file *filefd = fd_to_file(fd);
+    ret = file_write(filefd, buffer, size);
   }
   return (uint32_t) ret;
 }

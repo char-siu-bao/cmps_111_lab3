@@ -75,41 +75,35 @@ static bool load(const char *cmdline, void (**eip) (void), void **esp);
  */
 
 //put to code.c
-
-
 static void
 push_command_helper(const char *cmdline UNUSED, void **esp){
+  
+//    find argc 
     char *cmdline_copy = NULL;
     cmdline_copy = palloc_get_page(0);    
     strlcpy(cmdline_copy, cmdline, PGSIZE);
-    
-    char *cmdline_copy2 = NULL;
-    cmdline_copy2 = palloc_get_page(0);    
-    strlcpy(cmdline_copy2, cmdline, PGSIZE);
-    
-//    find argc 
-    char *token;
-    char *rest = cmdline_copy;
     int argc = 0;
-    token = strtok_r(rest, " ", &rest);
-    while (token != NULL){
-        token = strtok_r(NULL, " ", &rest);
-        argc++;
-    }
+    for(char *token = strtok_r(cmdline_copy, " ", &cmdline_copy);
+        token != NULL;
+        argc++, 
+        token = strtok_r(NULL, " ", &cmdline_copy)){}
+
 //    end of find argc
     
 //    store cmdline to argv[]
-    char *token1;
-    char *rest1 = cmdline_copy2;
+    char *cmdline_copy2 = NULL;
+    cmdline_copy2 = palloc_get_page(0);    
+    strlcpy(cmdline_copy2, cmdline, PGSIZE);
     char * argv[argc];
     int argvInd = 0;
-    token1 = strtok_r(rest1, " ", &rest1);
-    while (token1 != NULL){
-        argv[argvInd] = token1;
-        argvInd++;
-        token1 = strtok_r(NULL, " ", &rest1);
-    }
+    for(char *token1 = strtok_r(cmdline_copy2, " ", &cmdline_copy2 );
+        token1 != NULL;
+        argvInd++,
+        token1 = strtok_r(NULL, " ", &cmdline_copy2)
+        ){argv[argvInd] = token1;}
+
 //    end of store cmdline to argv[]
+    
 //    push argv[] to esp and store address to argvAddress[]
     int argvAddress[argc];
     for (int i = argc -1; i >= 0; i--){
@@ -131,12 +125,14 @@ push_command_helper(const char *cmdline UNUSED, void **esp){
         *esp -= 4;
         *((int*) *esp) = argvAddress[i];
     }
+    
 //    end of pushing argv address to stack
     int argvBase = (int)*esp;
     *esp -= 4;
     *((int*) *esp) = argvBase;
     *esp -= 4;
     *((int*) *esp) = argc;
+    
 //    return fake return address
     *esp -= 4;
     *((int*) *esp) = 0;
@@ -189,7 +185,6 @@ process_execute(const char *cmdline)
 #endif
 
     char *cmdline_copy = NULL;
-    char *cmdline_copy2 = NULL;
     tid_t tid = TID_ERROR;
 
     // Make a copy of CMDLINE to avoid a race condition between the caller and load() 
@@ -199,20 +194,18 @@ process_execute(const char *cmdline)
     
     strlcpy(cmdline_copy, cmdline, PGSIZE);
     
+    char *cmdline_copy2 = NULL;
     cmdline_copy2 = palloc_get_page(0);
     if (cmdline_copy2 == NULL) 
         return TID_ERROR;
     
     strlcpy(cmdline_copy2, cmdline, PGSIZE);
     
-    char *token;
-    char *rest;
-    token = strtok_r(cmdline_copy2, " ", &rest);
-    
 
+    char *token = strtok_r(cmdline_copy2, " ", &cmdline_copy2);
+    
     tid = thread_create(token, PRI_DEFAULT, start_process, cmdline_copy);
     semaphore_down(&thread_current()->childSema);
-
 
     return tid;
 }
@@ -225,8 +218,7 @@ process_execute(const char *cmdline)
 static void
 start_process(void *cmdline)
 {
-
-    
+   
     bool success = false;
     
     // Initialize interrupt frame and load executable. 
@@ -240,10 +232,9 @@ start_process(void *cmdline)
     cmdline_copy = palloc_get_page(0);    
     strlcpy(cmdline_copy, cmdline, PGSIZE);
 
-    char *token;
-    char *rest;
-    token = strtok_r(cmdline_copy, " ", &rest);
+    char *token = strtok_r(cmdline_copy, " ", &cmdline_copy);
     success = load(token, &pif.eip, &pif.esp);
+    
     if (success) {
         push_command(cmdline, &pif.esp);
     }
@@ -273,11 +264,12 @@ start_process(void *cmdline)
 
    This function will be implemented in Lab 3.  
    For now, it does nothing. */
+//add to code.c 
 int
 process_wait(tid_t child_tid UNUSED)
 {
     int exitCode = (child_tid == thread_current()->childPidWait)?
-        DEFAULTEXIT: 
+        DEFAULT_EXIT: 
         thread_current()->childExit;
     
     thread_current()->childPidWait = child_tid;

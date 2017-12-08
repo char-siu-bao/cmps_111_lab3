@@ -35,6 +35,8 @@
 
 #include "userprog/process.h"
 
+#define FD_STDOUT 1
+
 void syscall_init(void);
 void sys_exit(int);
 
