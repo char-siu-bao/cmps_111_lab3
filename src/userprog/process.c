@@ -76,12 +76,7 @@ static bool load(const char *cmdline, void (**eip) (void), void **esp);
 
 //put to code.c
 
-#define CHILDLOCK_VAL 0
-void 
-childLock_init(struct childLock *lock, char* cmdline){
-    lock->cmdline = cmdline;
-    semaphore_init(&lock->sema, CHILDLOCK_VAL);
-}
+
 static void
 push_command_helper(const char *cmdline UNUSED, void **esp){
     char *cmdline_copy = NULL;
@@ -214,16 +209,10 @@ process_execute(const char *cmdline)
     char *rest;
     token = strtok_r(cmdline_copy2, " ", &rest);
     
-    struct childLock newChildLock;
-    childLock_init(&newChildLock, cmdline_copy);
-//    printf("childlock: %s", newChildLock.cmdline);
-    // Create a Kernel Thread for the new process
-//    tid = thread_create(token, PRI_DEFAULT, start_process, &newChildLock);
-//    semaphore_down(&newChildLock.sema);
+
     tid = thread_create(token, PRI_DEFAULT, start_process, cmdline_copy);
     semaphore_down(&thread_current()->childSema);
 
-//    timer_msleep(10);
 
     return tid;
 }
@@ -234,11 +223,9 @@ process_execute(const char *cmdline)
  * If arguments are passed in CMDLINE, the thread will exit imediately.
  */
 static void
-start_process(void *childLock_v)
+start_process(void *cmdline)
 {
-//    struct childLock *childLock_r = (struct childLock*) childLock_v;
-//    char *cmdline = childLock_r->cmdline;
-    char *cmdline = (char *)childLock_v;
+
     
     bool success = false;
     
@@ -266,7 +253,7 @@ start_process(void *childLock_v)
         thread_exit();
     }
 
-//    semaphore_up(&childLock_r->sema);
+
     // Start the user process by simulating a return from an
     // interrupt, implemented by intr_exit (in threads/intr-stubs.S).  
     // Because intr_exit takes all of its arguments on the stack in 
@@ -289,7 +276,12 @@ start_process(void *childLock_v)
 int
 process_wait(tid_t child_tid UNUSED)
 {
-    return -1;
+    int exitCode = (child_tid == thread_current()->childPidWait)?
+        DEFAULTEXIT: 
+        thread_current()->childExit;
+    
+    thread_current()->childPidWait = child_tid;
+    return exitCode;
 }
 
 /* Free the current process's resources. */
@@ -314,7 +306,9 @@ process_exit(void)
         pagedir_activate(NULL);
         pagedir_destroy(pd);
     }
+    cur->parentThread->childExit = cur->exitCode;
     semaphore_up(&cur->parentThread->childSema);
+
 }
 
 /* Sets up the CPU for running user code in the current

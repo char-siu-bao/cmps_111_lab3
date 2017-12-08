@@ -14,26 +14,13 @@
             <file>file:/home/pintos/pintos/src/lib/user/syscall.c</file>
             <file>file:/home/pintos/pintos/src/filesys/file.c</file>
             <file>file:/home/pintos/pintos/src/filesys/file.h</file>
-            <file>file:/home/pintos/pintos/src/lib/kernel/hash.c</file>
-            <file>file:/home/pintos/pintos/src/threads/vaddr.h</file>
-            <file>file:/home/pintos/pintos/src/userprog/gdt.h</file>
-            <file>file:/home/pintos/pintos/src/filesys/filesys.c</file>
-            <file>file:/home/pintos/pintos/src/userprog/process.c</file>
-            <file>file:/home/pintos/pintos/src/threads/thread.h</file>
-            <file>file:/home/pintos/pintos/src/userprog/umem.c</file>
-            <file>file:/home/pintos/pintos/src/lib/kernel/hash.h</file>
-            <file>file:/home/pintos/pintos/src/filesys/filesys.h</file>
-            <file>file:/home/pintos/pintos/src/Makefile.build</file>
             <file>file:/home/pintos/pintos/src/threads/thread.c</file>
-            <file>file:/home/pintos/pintos/src/devices/timer.c</file>
-            <file>file:/home/pintos/pintos/src/userprog/gdt.c</file>
-            <file>file:/home/pintos/pintos/src/tests/userprog/args-multiple.ck</file>
-            <file>file:/home/pintos/pintos/src/threads/lock.c</file>
-            <file>file:/home/pintos/pintos/src/userprog/syscall.h</file>
-            <file>file:/home/pintos/pintos/src/threads/semaphore.h</file>
+            <file>file:/home/pintos/pintos/src/tests/userprog/wait-simple.c</file>
+            <file>file:/home/pintos/pintos/src/lib/kernel/list.h</file>
+            <file>file:/home/pintos/pintos/src/lib/debug.h</file>
             <file>file:/home/pintos/pintos/src/userprog/syscall.c</file>
-            <file>file:/home/pintos/pintos/src/threads/semaphore.c</file>
-            <file>file:/home/pintos/pintos/src/threads/lock.h</file>
+            <file>file:/home/pintos/pintos/src/threads/thread.h</file>
+            <file>file:/home/pintos/pintos/src/userprog/process.c</file>
         </group>
     </open-files>
 </project-private>

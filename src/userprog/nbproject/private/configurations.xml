@@ -18,6 +18,7 @@
           </df>
         </df>
         <df name="threads">
+          <in>kernel.lds.s</in>
         </df>
         <df name="userprog">
         </df>
