@@ -218,8 +218,10 @@ process_execute(const char *cmdline)
     childLock_init(&newChildLock, cmdline_copy);
 //    printf("childlock: %s", newChildLock.cmdline);
     // Create a Kernel Thread for the new process
-    tid = thread_create(token, PRI_DEFAULT, start_process, &newChildLock);
-    semaphore_down(&newChildLock.sema);
+//    tid = thread_create(token, PRI_DEFAULT, start_process, &newChildLock);
+//    semaphore_down(&newChildLock.sema);
+    tid = thread_create(token, PRI_DEFAULT, start_process, cmdline_copy);
+    semaphore_down(&thread_current()->childSema);
 
 //    timer_msleep(10);
 
@@ -234,11 +236,12 @@ process_execute(const char *cmdline)
 static void
 start_process(void *childLock_v)
 {
-    struct childLock *childLock_r = (struct childLock*) childLock_v;
-    char *cmdline = childLock_r->cmdline;
+//    struct childLock *childLock_r = (struct childLock*) childLock_v;
+//    char *cmdline = childLock_r->cmdline;
+    char *cmdline = (char *)childLock_v;
+    
     bool success = false;
-
-
+    
     // Initialize interrupt frame and load executable. 
     struct intr_frame pif;
     memset(&pif, 0, sizeof pif);
@@ -263,7 +266,7 @@ start_process(void *childLock_v)
         thread_exit();
     }
 
-    semaphore_up(&childLock_r->sema);
+//    semaphore_up(&childLock_r->sema);
     // Start the user process by simulating a return from an
     // interrupt, implemented by intr_exit (in threads/intr-stubs.S).  
     // Because intr_exit takes all of its arguments on the stack in 
@@ -311,6 +314,7 @@ process_exit(void)
         pagedir_activate(NULL);
         pagedir_destroy(pd);
     }
+    semaphore_up(&cur->parentThread->childSema);
 }
 
 /* Sets up the CPU for running user code in the current

@@ -127,6 +127,11 @@ static void exec_handler( struct intr_frame *f){
     f->eax =  process_execute(cmdline); 
 }
 
+static void wait_handler( struct intr_frame *f){
+    process_wait(1);
+    f->eax = -1;
+}
+
 
 static void read_handler( struct intr_frame *f){
     int fd;
@@ -204,11 +209,12 @@ syscall_handler(struct intr_frame *f)
     close_handler(f);
     break;
    
-//  case SYS_EXEC:
-//    exec_handler(f);
-//    break;
+  case SYS_EXEC:
+    exec_handler(f);
+    break;
     
   case SYS_WAIT:
+    wait_handler(f);
     break;
     
   default:
