@@ -36,6 +36,8 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/semaphore.h"
+
 
 #ifdef VM
 #include "vm/page.h"
@@ -60,6 +62,9 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+
+#define DEFAULT_EXIT -1
+#define NO_CHILDPIDWAIT -2
 /* 
 // A kernel thread or user process.
 //
@@ -139,7 +144,12 @@ struct thread
     uint8_t *current_esp;  // "Executable Stack Pointer" 
                            // i.e the current value of the user program’s stack pointer
     struct dir *cwd;	   // Current Working Directory, if any
-
+    int childExit;
+    struct thread *parentThread;
+    struct semaphore childSema;
+    int childPidWait;
+    int exitCode;
+    struct list fds;
     // Owned by thread.c. 
     unsigned magic;        // Detects stack overflow. 
   };

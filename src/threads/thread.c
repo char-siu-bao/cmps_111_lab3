@@ -564,7 +564,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->sleep_endtick = 0;
   t->magic = THREAD_MAGIC;
-
+  t->childExit = DEFAULT_EXIT;
+  t->exitCode = DEFAULT_EXIT;
+  t->parentThread = strcmp(name, "main") == 0?
+      NULL: thread_current();
+  semaphore_init(&t->childSema, 0);
+  list_init(&t->fds);
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
