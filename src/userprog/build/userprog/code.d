@@ -1,4 +1,4 @@
-userprog/syscall.o: ../../userprog/syscall.c ../../lib/stdio.h \
+userprog/code.o: ../../userprog/code.c ../../lib/stdio.h \
  ../../lib/debug.h ../../lib/stdarg.h ../../lib/stdbool.h \
  ../../lib/stddef.h ../../lib/stdint.h ../../lib/kernel/stdio.h \
  ../../lib/syscall-nr.h ../../lib/kernel/list.h ../../devices/shutdown.h \
@@ -7,5 +7,4 @@ userprog/syscall.o: ../../userprog/syscall.c ../../lib/stdio.h \
  ../../lib/inttypes.h ../../filesys/directory.h ../../threads/palloc.h \
  ../../threads/malloc.h ../../threads/interrupt.h ../../threads/thread.h \
  ../../threads/semaphore.h ../../threads/vaddr.h ../../threads/loader.h \
- ../../userprog/syscall.h ../../userprog/process.h ../../userprog/umem.h \
- ../../userprog/code.h
+ ../../userprog/syscall.h ../../userprog/process.h ../../userprog/umem.h
