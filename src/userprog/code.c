@@ -7,6 +7,10 @@
 #include <stdio.h>
 #include <syscall-nr.h>
 #include <list.h>
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+#include <round.h>
 
 #include "devices/shutdown.h"
 #include "devices/input.h"
@@ -22,6 +26,7 @@
 #include "userprog/syscall.h"
 #include "userprog/process.h"
 #include "userprog/umem.h"
+#include "userprog/code.h"
 
 bool 
 create_handler( struct intr_frame *f){
@@ -122,4 +127,67 @@ read_handler( struct intr_frame *f){
     f->eax = read_val;
     return read_val;
    
+}
+void
+push_command_helper(const char *cmdline UNUSED, void **esp){
+  
+//    find argc 
+    char *cmdline_copy = NULL;
+    cmdline_copy = palloc_get_page(0);    
+    strlcpy(cmdline_copy, cmdline, PGSIZE);
+    int argc = 0;
+    for(char *token = strtok_r(cmdline_copy, " ", &cmdline_copy);
+        token != NULL;
+        argc++, 
+        token = strtok_r(NULL, " ", &cmdline_copy)){}
+
+//    end of find argc
+    
+//    store cmdline to argv[]
+    char *cmdline_copy2 = NULL;
+    cmdline_copy2 = palloc_get_page(0);    
+    strlcpy(cmdline_copy2, cmdline, PGSIZE);
+    char * argv[argc];
+    int argvInd = 0;
+    for(char *token1 = strtok_r(cmdline_copy2, " ", &cmdline_copy2 );
+        token1 != NULL;
+        argvInd++,
+        token1 = strtok_r(NULL, " ", &cmdline_copy2)
+        ){argv[argvInd] = token1;}
+
+//    end of store cmdline to argv[]
+    
+//    push argv[] to esp and store address to argvAddress[]
+    int argvAddress[argc];
+    for (int i = argc -1; i >= 0; i--){
+        int len = strlen(argv[i]) + 1;
+        *esp -= len;
+        argvAddress[i] = (int)memcpy(*esp, argv[i], len);
+    }
+//    end of push argv[] to esp and store address to argvAddress[]
+    
+//    word alignment
+    *esp = (void*) ((unsigned int) (*esp) & 0xfffffffc);
+    
+//    ending argv adress
+    *esp -= 4;
+    *((int*) *esp) = 0;
+    
+//    pushing argv address to stack
+    for (int i = argc -1; i >= 0; i--){
+        *esp -= 4;
+        *((int*) *esp) = argvAddress[i];
+    }
+    
+//    end of pushing argv address to stack
+    int argvBase = (int)*esp;
+    *esp -= 4;
+    *((int*) *esp) = argvBase;
+    *esp -= 4;
+    *((int*) *esp) = argc;
+    
+//    return fake return address
+    *esp -= 4;
+    *((int*) *esp) = 0;
+    
 }

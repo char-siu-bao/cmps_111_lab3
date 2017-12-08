@@ -11,4 +11,4 @@ userprog/process.o: ../../userprog/process.c ../../lib/debug.h \
  ../../threads/malloc.h ../../threads/thread.h ../../threads/semaphore.h \
  ../../threads/vaddr.h ../../threads/loader.h ../../userprog/gdt.h \
  ../../userprog/pagedir.h ../../userprog/syscall.h \
- ../../userprog/process.h ../../devices/timer.h
+ ../../userprog/process.h ../../devices/timer.h ../../userprog/code.h

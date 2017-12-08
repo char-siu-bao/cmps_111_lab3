@@ -59,6 +59,8 @@
 #include "userprog/process.h"
 #include "devices/timer.h"
 
+#include "userprog/code.h"
+
 // *****************************************************************
 // CMPS111 Lab 3 : Remove the comment on this literal when you are 
 // ready to start testing command line arguments
@@ -74,70 +76,7 @@ static bool load(const char *cmdline, void (**eip) (void), void **esp);
  * format binary has been loaded into the heap by load();
  */
 
-//put to code.c
-static void
-push_command_helper(const char *cmdline UNUSED, void **esp){
-  
-//    find argc 
-    char *cmdline_copy = NULL;
-    cmdline_copy = palloc_get_page(0);    
-    strlcpy(cmdline_copy, cmdline, PGSIZE);
-    int argc = 0;
-    for(char *token = strtok_r(cmdline_copy, " ", &cmdline_copy);
-        token != NULL;
-        argc++, 
-        token = strtok_r(NULL, " ", &cmdline_copy)){}
 
-//    end of find argc
-    
-//    store cmdline to argv[]
-    char *cmdline_copy2 = NULL;
-    cmdline_copy2 = palloc_get_page(0);    
-    strlcpy(cmdline_copy2, cmdline, PGSIZE);
-    char * argv[argc];
-    int argvInd = 0;
-    for(char *token1 = strtok_r(cmdline_copy2, " ", &cmdline_copy2 );
-        token1 != NULL;
-        argvInd++,
-        token1 = strtok_r(NULL, " ", &cmdline_copy2)
-        ){argv[argvInd] = token1;}
-
-//    end of store cmdline to argv[]
-    
-//    push argv[] to esp and store address to argvAddress[]
-    int argvAddress[argc];
-    for (int i = argc -1; i >= 0; i--){
-        int len = strlen(argv[i]) + 1;
-        *esp -= len;
-        argvAddress[i] = (int)memcpy(*esp, argv[i], len);
-    }
-//    end of push argv[] to esp and store address to argvAddress[]
-    
-//    word alignment
-    *esp = (void*) ((unsigned int) (*esp) & 0xfffffffc);
-    
-//    ending argv adress
-    *esp -= 4;
-    *((int*) *esp) = 0;
-    
-//    pushing argv address to stack
-    for (int i = argc -1; i >= 0; i--){
-        *esp -= 4;
-        *((int*) *esp) = argvAddress[i];
-    }
-    
-//    end of pushing argv address to stack
-    int argvBase = (int)*esp;
-    *esp -= 4;
-    *((int*) *esp) = argvBase;
-    *esp -= 4;
-    *((int*) *esp) = argc;
-    
-//    return fake return address
-    *esp -= 4;
-    *((int*) *esp) = 0;
-    
-}
 static void
 push_command(const char *cmdline UNUSED, void **esp)
 {

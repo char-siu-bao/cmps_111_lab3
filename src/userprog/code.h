@@ -15,6 +15,8 @@
 #define CODE_H
 
 #include "threads/interrupt.h"
+#include <debug.h>
+
 bool create_handler( struct intr_frame *f);
 int open_handler( struct intr_frame *f);
 struct file * fd_to_file(int fd);
@@ -23,6 +25,7 @@ int filesize_handler( struct intr_frame *f);
 void exec_handler( struct intr_frame *f);
 int wait_handler( struct intr_frame *f);
 int read_handler( struct intr_frame *f);
+void push_command_helper(const char *cmdline UNUSED, void **esp);
 
 #endif /* CODE_H */
 
