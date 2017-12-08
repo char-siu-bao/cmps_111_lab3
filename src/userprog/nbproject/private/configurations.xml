@@ -18,11 +18,12 @@
           </df>
         </df>
         <df name="threads">
-          <in>kernel.lds.s</in>
         </df>
         <df name="userprog">
         </df>
       </df>
+      <in>code.c</in>
+      <in>code.h</in>
       <in>exception.c</in>
       <in>exception.h</in>
       <in>gdt.c</in>

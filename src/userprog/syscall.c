@@ -60,7 +60,24 @@ static void create_handler( struct intr_frame *f){
     f->eax = filesys_create(file, initial_size, false);
     
 }
+static int open_handler( struct intr_frame *f){
+    char *file;
+    umem_read(f->esp + 4, &file, sizeof(file));
+    struct file *file_ret = filesys_open(file);
+    if (file_ret == NULL){
+        f->eax = -1;
+    }
+    else{
+        list_push_front(&thread_current()->fd, &file_ret->elem);
+        f->eax = list_size(&thread_current()->fd) + 2;
+    }
+//    return 3;
+//    f->eax = filesys_open(file);
+}
 
+static void read_handler( struct intr_frame *f){
+
+}
 static void syscall_handler(struct intr_frame *);
 
 static void write_handler(struct intr_frame *);
@@ -101,7 +118,14 @@ syscall_handler(struct intr_frame *f)
   case SYS_CREATE:
     create_handler(f);
     break;
-            
+    
+  case SYS_OPEN:
+    open_handler(f);
+    break;
+    
+  case SYS_READ:
+    read_handler(f);
+    break;
 
   default:
     printf("[ERROR] system call %d is unimplemented!\n", syscall);
